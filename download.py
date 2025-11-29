@@ -23,7 +23,16 @@ def find_model(model_name):
         return download_model(model_name)
     else:  # Load a custom DiT checkpoint:
         assert os.path.isfile(model_name), f'Could not find DiT checkpoint at {model_name}'
-        checkpoint = torch.load(model_name, map_location=lambda storage, loc: storage)
+
+        # [rank1]:   File "/python3.11/site-packages/torch/serialization.py", line 1529, in load
+        # [rank1]:     raise pickle.UnpicklingError(_get_wo_message(str(e))) from None
+        # [rank1]: _pickle.UnpicklingError: Weights only load failed. This file can still be loaded, to do so you have two options, do those steps only if you trust the source of the checkpoint. 
+        # [rank1]:        (1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+        # [rank1]:        (2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+        # [rank1]:        WeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.
+
+        # [rank1]: Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+        checkpoint = torch.load(model_name, map_location=lambda storage, loc: storage, weights_only=False,)
         if "ema" in checkpoint:  # supports checkpoints from train.py
             checkpoint = checkpoint["ema"]
         return checkpoint
