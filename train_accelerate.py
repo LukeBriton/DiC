@@ -156,7 +156,7 @@ def main(args, unparsed):
     if args.ckpt is not None:
         if accelerator.is_main_process:
             print(f'Ckpt {args.ckpt} loaded, with Epoch [{args.start_epoch}] @ iter [{args.ckpt_iter}]!')
-        model.load_state_dict(torch.load(args.ckpt, map_location='cpu')['model'])
+        model.load_state_dict(torch.load(args.ckpt, map_location='cpu', weights_only=False)['model'])
     
     model = model.to(device)
 
@@ -212,7 +212,7 @@ def main(args, unparsed):
 
     if args.ckpt_iter is not None:
         train_steps += args.ckpt_iter
-        ckpt = torch.load(args.ckpt, map_location=f'{device}')
+        ckpt = torch.load(args.ckpt, map_location=f'{device}', weights_only=False)
         ema.load_state_dict(ckpt['ema'])
         opt.load_state_dict(ckpt['opt'])
         del ckpt

@@ -172,7 +172,7 @@ def main(args, unparsed):
     if args.ckpt is not None:
         if rank == 0:
             print(f'Ckpt {args.ckpt} loaded, with epoch [{args.start_epoch}] @ iter [{args.ckpt_iter}]!')
-        model.load_state_dict(torch.load(args.ckpt, map_location='cpu')['model'])
+        model.load_state_dict(torch.load(args.ckpt, map_location='cpu', weights_only=False)['model'])
 
     # Note that parameter initialization is done within the DiT constructor
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
@@ -233,7 +233,7 @@ def main(args, unparsed):
     # load ema/opt parameters
     if args.ckpt_iter is not None:
         train_steps += args.ckpt_iter
-        ckpt = torch.load(args.ckpt, map_location=f'cuda:{device}')
+        ckpt = torch.load(args.ckpt, map_location=f'cuda:{device}', weights_only=False)
         ema.load_state_dict(ckpt['ema'])
         opt.load_state_dict(ckpt['opt'])
         del ckpt
