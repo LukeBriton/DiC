@@ -32,7 +32,7 @@ class CustomDataset(Dataset):
 
         self.features_files = sorted(os.listdir(self.features_dir), key=lambda x:int(x.split('_')[0])*8+int(x[-5]))[:-1]
         self.labels_files = sorted(os.listdir(self.labels_dir), key=lambda x:int(x.split('_')[0])*8+int(x[-5]))[:-1]
-        assert len(self.features_files) == len(self.features_files) == 1281167 # ImageNet
+        assert len(self.features_files) == len(self.labels_files) # == 1281167 # ImageNet
 
     def __len__(self):
         assert len(self.features_files) == len(self.labels_files), \

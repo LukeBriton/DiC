@@ -180,7 +180,11 @@ def main(args, unparsed):
     model = DDP(model.to(device), device_ids=[rank]) if dist.is_initialized() else model.to(device)
     diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
     if args.feature_path is None:
-        vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+        local_path = f"../sd-vae-ft-ema"
+        if not os.path.exists(local_path):
+            vae = AutoencoderKL.from_pretrained(f"stabilityai/sd-vae-ft-{args.vae}").to(device)
+        else:
+            vae = AutoencoderKL.from_pretrained(local_path).to(device)
     logger.info(f"DiT Parameters: {sum(p.numel() for p in model.parameters()):,}")
 
     # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant learning rate of 1e-4 in our paper):
@@ -246,6 +250,22 @@ def main(args, unparsed):
         for x, y in loader:
             x = x.to(device)
             y = y.to(device)
+
+            # RuntimeError: Expected 3D (unbatched) or 4D (batched) input to conv2d, but got input of size: [128, 32, 4, 32, 32]
+            # ref. The problem of DiC training with imagenet_feature https://github.com/YuchuanTian/DiC/issues/10
+            # 处理 VAE feature pack 的维度 ---
+            # 如果加载的是预提取的 VAE feature，通常形状是 [B, P, C, H, W]
+            # 这里把 pack 维度 P 展平成 batch，变成 [B * P, C, H, W]
+            if x.ndim == 5:
+                B, P, C, H, W = x.shape
+                x = x.view(B * P, C, H, W)
+
+                # label 通常是 [B, P] 或 [B, P, 1]，一并展平
+                if y.ndim == 2:
+                    y = y.view(B * P)
+                elif y.ndim == 3 and y.shape[-1] == 1:
+                    y = y.view(B * P)
+
             if args.feature_path is None: # run vae
                 with torch.no_grad():
                     # Map input images to latent space + normalize latents:
