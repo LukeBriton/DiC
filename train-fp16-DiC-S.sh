@@ -1,0 +1,1 @@
+accelerate launch --mixed_precision fp16 train_accelerate.py --feature-path "../imagenet_vae_256/imagenet_feature" --image-size=256 --model=DiC-S --epochs=160 --global-batch-size=24 --ckpt-every 10_000
